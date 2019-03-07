@@ -6,30 +6,50 @@ use Illuminate\Http\Request;
 
 class StripePaymentController extends Controller
 {
-    public function index(Request $request)
-    {
-    	$token 				=	$request->input('stripeToken');
-    	$email				=	$request->input('stripeEmail');
-    	$amount 			=	'999';
-    	$currency 			=	'usd';
-    	$description		=	'Description here';
-    	$custom_descriptor	=	'Custom descriptor';
+	protected $token;
+	protected $email;
+	protected $amount;
+	protected $currency;
+	protected $description;
+	protected $custom_descriptor;
+	protected $status;
+	protected $id;
+	protected $paidAmount;
+	protected $source_id;
+	public $url 	=	'https://api.stripe.com/v1/charges';
 
-    	if ( !null($token) ) {
-    		$payment 	=	$this->makeCall($token,$amount,$currency,$description,$custom_descriptor);
-    		// VALIDATE $payment here
-    	}
-    }
+	
+	public function __construct(Request $request) 
+	{
+		$this->token 				=	$request->input('stripeToken');
+    		$this->email				=	$request->input('stripeEmail');
+    		$this->currency 			=	'CURRENCY HERE';
+    		$this->description			= 	'DESCRIPTION HERE';
+    		$this->custom_descriptor 		= 	'CUSTOM DESCRIPTOR HERE';
+		$this->amount 				=	'AMOUNT HERE';
+	}
 
-    private function makeCall($token)
-    {
+    	public function index()
+    	{
+    		if ( !empty($this->token) ) {
+    			$payment 			=	$this->makeCall();
+    			$this->status			=	$payment->status;
+    			$this->id 			=	$payment->id;
+    			$this->paidAmount 		=	$payment->amount;
+    			$this->source_id 		=	$payment->source->id;
+    			$this->validatePayment();
+    		}
+   	 }
 
-		$data	=	"amount=$amount&currency=$currency&description=$description&source=$token&statement_descriptor=$custom_descriptor";
+    	private function makeCall($token)
+    	{
+
+		$data	=	"amount=$this->amount&currency=$currency&description=$description&source=$token&statement_descriptor=$custom_descriptor";
 
 		$curl 	= 	curl_init();
 
 		curl_setopt_array($curl, array(
-		    CURLOPT_URL => "https://api.stripe.com/v1/charges",
+		    CURLOPT_URL => $this->url,
 		    CURLOPT_RETURNTRANSFER => true,
 		    CURLOPT_ENCODING => "",
 		    CURLOPT_MAXREDIRS => 10,
@@ -39,7 +59,6 @@ class StripePaymentController extends Controller
 		    CURLOPT_USERPWD=>"STRIPE_KEY_HERE",
 		    CURLOPT_POSTFIELDS => $data,
 		    CURLOPT_HTTPHEADER => array(
-		    	// Set here requred headers
 		        "accept: */*",
 		        "accept-language: en-US,en;q=0.8",
 		        "content-type: application/x-www-form-urlencoded",
@@ -52,5 +71,12 @@ class StripePaymentController extends Controller
 		curl_close($curl);
 
 		return $response; 
-    } 
+    	} 
+
+    	private function validatePayment()
+    	{
+    		//VALIDATE THE PAYMENT HERE
+    		dd($this->status);
+    	}
+
 }
